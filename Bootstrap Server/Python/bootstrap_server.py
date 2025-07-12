@@ -1,4 +1,6 @@
 import socket
+
+from config.config import BUFFER_SIZE
 from ttypes import Node
 from random import shuffle
 
@@ -39,7 +41,7 @@ class BootstrapServerConnection:
             RuntimeError: If server sends an invalid response or if registration is unsuccessful
         '''
         self.unreg_from_bs()
-        buffer_size = 1024
+        buffer_size = BUFFER_SIZE
         message = "REG "+ self.me.ip + " " +str(self.me.port) +" " + self.me.name
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -82,7 +84,7 @@ class BootstrapServerConnection:
         Raises:
             RuntimeError: If unregistration is unsuccessful
         '''
-        buffer_size = 1024
+        buffer_size = BUFFER_SIZE
         message = "UNREG "+ self.me.ip + " " +str(self.me.port) +" " + self.me.name
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
