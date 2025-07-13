@@ -8,16 +8,19 @@ def main():
     # Set up logging configuration at the entry point
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    # Application configuration
-    my_ip = BOOTSTRAP_IP
-    my_port = NODE_DEFAULT_PORT
-    my_name = "peer2"
-    bootstrap_ip = BOOTSTRAP_IP
-    bootstrap_port = BOOTSTRAP_PORT
+    # Example setup
+    node1 = Node("127.0.0.1", 5000, "Node1", ["File Names.txt"], [("127.0.0.1", 5001)])
+    node2 = Node("127.0.0.1", 5001, "Node2", [], [("127.0.0.1", 5000)])
 
-    # Create Node and connect to the bootstrap server
-    node_instance = Node(bootstrap_ip, bootstrap_port, my_ip, my_port, my_name)
-    node_instance.register()  # Register with the bootstrap server
+    node1.start()
+    node2.start()
+
+    # Generate a query from Node1
+    node1.generate_query("Queries.txt")
+
+    # Stop nodes after testing
+    node1.stop()
+    node2.stop()
 
 
 if __name__ == "__main__":
