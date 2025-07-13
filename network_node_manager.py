@@ -40,7 +40,7 @@ class Node:
             data, _ = s.recvfrom(1024)
             response = data.decode()
 
-            print(f"Received from BS: {response}")
+            logging.info(f"Received from BS: {response}")
             self.handle_register_response(response)
 
     def handle_register_response(self, response):
@@ -60,12 +60,15 @@ class Node:
         if toks[0] == "REGOK":  # Correct registration response
             num_nodes = int(toks[1])  # Number of neighbors
             if num_nodes > 0:
-                # Parse and add neighbors
+                # Parse and add neighbors as Node instances
                 for i in range(num_nodes):
                     try:
                         neighbor_ip = toks[2 + i * 2]
                         neighbor_port = int(toks[3 + i * 2])
-                        self.neighbors.append((neighbor_ip, neighbor_port))
+                        # Create Node instances for neighbors
+                        neighbor = Node(name=f"Neighbor-{neighbor_ip}:{neighbor_port}", ip=neighbor_ip,
+                                        port=neighbor_port)
+                        self.neighbors.append(neighbor)
                     except IndexError:
                         logging.error(f"Malformed neighbor data in response: {response}")
                 logging.info(f"New neighbors: {self.neighbors}")
@@ -73,7 +76,6 @@ class Node:
                 logging.info("No other nodes in the network.")
         else:
             logging.error(f"Unexpected registration response: {response}")
-
 
 
     def unregister(self):

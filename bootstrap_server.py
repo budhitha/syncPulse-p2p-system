@@ -1,3 +1,4 @@
+import logging
 import socket
 import threading
 
@@ -17,7 +18,7 @@ class BootstrapServer:
         try:
             # Receive the data from the client
             data = conn.recv(1024).decode()
-            print("Received:", data)
+            logging.info(f"Received: {data}")
 
             # Tokenize the message
             toks = data.split()

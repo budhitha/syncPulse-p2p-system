@@ -66,7 +66,9 @@ class TestNode(unittest.TestCase):
         self.node.register()
 
         self.assertEqual(len(self.node.neighbors), 1)
-        self.assertEqual(self.node.neighbors[0], ("127.0.0.2", 5002))
+        # Check that the neighbor is a Node object with the correct attributes
+        self.assertEqual(self.node.neighbors[0].ip, "127.0.0.2")
+        self.assertEqual(self.node.neighbors[0].port, 5002)
 
     @patch("socket.socket")  # Mock socket for registration
     def test_register_failure(self, mock_socket):

@@ -5,6 +5,9 @@ from node import Node
 
 
 def main():
+    # Set up logging configuration at the entry point
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
     # Application configuration
     my_ip = BOOTSTRAP_IP
     my_port = NODE_DEFAULT_PORT
@@ -15,8 +18,6 @@ def main():
     # Create Node and connect to the bootstrap server
     node_instance = Node(bootstrap_ip, bootstrap_port, my_ip, my_port, my_name)
     node_instance.register()  # Register with the bootstrap server
-
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 if __name__ == "__main__":

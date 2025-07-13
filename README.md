@@ -1,4 +1,4 @@
-# Decentralized Node Network
+# syncPulse - Decentralized Node Network
 
 A Python-based implementation of a decentralized network using nodes that connect, register, and communicate with each other over a distributed system. The project allows nodes to connect via a bootstrap server, exchange information, and manage a scalable peer-to-peer network.
 
@@ -28,7 +28,7 @@ A Python-based implementation of a decentralized network using nodes that connec
 
 ## Project Structure
 
-The project is organized as follows:# syncPluse-p2p-system
+The project is organized as follows:# syncPulse-p2p-system
 
 ---
 
