@@ -28,7 +28,16 @@ A Python-based implementation of a decentralized network using nodes that connec
 
 ## Project Structure
 
-The project is organized as follows:# syncPulse-p2p-system
+The project is organized as follows:
+- **`app.py`**: Entry point for the Flask API.
+- **`bootstrap_server.py`**: Manages the bootstrap server for node registration.
+- **`integration_test.py`**: Script to test the entire flow of the P2P system.
+- **`performance_analysis.py`**: Contains functions for logging and analyzing performance metrics.
+- **`config/config.py`**: Configuration file for IPs, ports, and buffer sizes.
+- **`connections/`**: Handles connections between nodes and the bootstrap server.
+- **`files/`**: Contains sample files for testing.
+- **`utils/`**: Utility functions for logging, file reading, and helpers.
+- **`tests/`**: Unit tests for the system.
 
 ---
 
@@ -48,6 +57,18 @@ The project is organized as follows:# syncPulse-p2p-system
 
 ---
 
+## Configuration
+
+The system uses the following default configurations (defined in `config/config.py`):
+- **Bootstrap Server IP**: `127.0.0.1`
+- **Bootstrap Server Port**: `5000`
+- **Node Default Port**: `5002`
+- **Buffer Size**: `1024`
+- **Flask API Port**: `4000`
+- **Flask API URL**: `http://127.0.0.1:4000`
+
+---
+
 ## Installation
 
 ### Prerequisites
@@ -58,7 +79,7 @@ The project is organized as follows:# syncPulse-p2p-system
 ### Clone the Repository
 
 ```bash
-bash git clone https://github.com/budhitha/syncPulse-p2p-system.git
+git clone https://github.com/budhitha/syncPulse-p2p-system.git
 cd syncPulse-p2p-system
 ```
 
@@ -77,6 +98,30 @@ It's a good practice to use a virtual environment.
    ```bash
    pip install -r requirements.txt
    ```
+
+---
+## Running the system
+
+1. Start the Bootstrap Server
+    
+    Run the bootstrap server to manage node registrations: 
+    ```bash
+    python bootstrap_server.py
+    ```
+   
+2. Start the Flask API
+
+    Start the Flask API for file generation and queries:
+    ```bash
+    python app.py
+    ```
+   
+3. Run the Integration Test
+
+    Test the entire flow of the system:
+    ```bash
+    python integration_test.py
+    ````
 
 ---
 
@@ -122,6 +167,13 @@ A new node will:
 - `UNREG`: Unregister a node.
 - `JOIN`: Notify neighbors when joining the network.
 - `LEAVE`: Notify neighbors when leaving the network.
+
+---
+## Troubleshooting
+
+- **Flask API Not Responding**: Ensure the Flask server is running on port 4000.
+- **Port Conflicts**: Check for conflicting processes using netstat and update the configuration if needed.
+- **No Plots Displayed**: Ensure plot_cdf is called after metrics are populated in integration_test.py.
 
 ---
 
@@ -179,33 +231,12 @@ This will test:
 
 ---
 
-## Configuration
-
-All configurable parameters, such as IPs, ports, and buffer sizes, are located in `config/config.py`. 
-Modify these values as needed for your setup:
-
-```python
-# config/config.py
-BOOTSTRAP_IP = "127.0.0.1" 
-BOOTSTRAP_PORT = 5000 
-NODE_DEFAULT_PORT = 5001 
-BUFFER_SIZE = 1024
-```
-
----
-
 ## Future Improvements
 
 - Add features for file sharing between nodes.
 - Implement recovery mechanisms for failed nodes.
 - Optimize neighbor discovery using advanced protocols.
 - Add support for encrypted communication.
-
----
-
-## License
-
-This project is open-source and available under the [MIT License](LICENSE).
 
 ---
 
