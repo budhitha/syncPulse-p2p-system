@@ -3,6 +3,7 @@ import threading
 import logging
 import random
 
+from config.config import BUFFER_SIZE
 from connections.bootstrap_server_connection import BootstrapServerConnection
 from ttypes import Node as SimpleNode  # Import the simple Node class for the bootstrap server
 
@@ -13,8 +14,11 @@ class Node:
         self.port = port
         self.name = name
         # Ensure sampling does not exceed the size of the file_list
-        sample_size = min(len(file_list), random.randint(3, 5))
-        self.file_list = set(random.sample(file_list, sample_size))
+        if not file_list:
+            self.file_list = set()  # Assign an empty set if file_list is empty
+        else:
+            sample_size = min(len(file_list), random.randint(3, 5))
+            self.file_list = set(random.sample(file_list, sample_size))
         self.peers = peers  # List of peer addresses (IP, Port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.ip, self.port))
@@ -45,7 +49,7 @@ class Node:
     def listen(self):
         while self.running:
             try:
-                data, addr = self.sock.recvfrom(1024)
+                data, addr = self.sock.recvfrom(BUFFER_SIZE)
                 message = data.decode()
                 self.handle_message(message, addr)
             except Exception as e:
