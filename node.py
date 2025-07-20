@@ -52,6 +52,9 @@ class Node:
                 data, addr = self.sock.recvfrom(BUFFER_SIZE)
                 message = data.decode()
                 self.handle_message(message, addr)
+            except socket.timeout:
+                # Timeout occurred, continue to check self.running
+                continue
             except Exception as e:
                 logging.error(f"Error receiving message: {e}")
 

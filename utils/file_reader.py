@@ -29,3 +29,4 @@ def read_file_names(file_path):
         return []
     except Exception as e:
         logging.error(f"An unexpected error occurred while reading file '{file_path}': {e}")
+        return []

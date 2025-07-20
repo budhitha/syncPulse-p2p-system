@@ -9,10 +9,11 @@ def main():
     # Set up logging configuration at the entry point
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+    file = "File Names.txt"
     # Example setup
-    with open("File Names.txt", "r") as file:
-        file_content = file.read()
-    node1 = Node(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT, name="Node1", file_list=[file_content],
+    with open(file=file, mode="r") as file:
+        file_content = file.readlines()
+    node1 = Node(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT, name="Node1", file_list=[line.strip() for line in file_content],
                  peers=[(BOOTSTRAP_IP, BOOTSTRAP_PORT + 1)])
     node2 = Node(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT + 1, name="Node2", file_list=[],
                  peers=[(BOOTSTRAP_IP, BOOTSTRAP_PORT)])
