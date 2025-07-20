@@ -27,7 +27,7 @@ class Node:
 
     def start(self):
         self.running = True
-        self.thread = threading.Thread(target=self.listen, daemon=True)
+        self.thread = threading.Thread(target=self.listen)
         self.thread.start()
         logging.info(f"Thread started: {self.thread.is_alive()}")
 
@@ -73,7 +73,11 @@ class Node:
         """
         logging.info(f"Received message from {addr}: {message}")
         if message.startswith("QUERY:"):
-            _, file_name, sender_name = message.split(":")
+            parts = message.split(":")
+            if len(parts) != 3:
+                logging.warning(f"Malformed QUERY message from {addr}: {message}")
+                return
+            _, file_name, sender_name = parts
             if file_name in self.file_list:
                 response = f"FOUND:{file_name}:{self.name}"
                 try:
