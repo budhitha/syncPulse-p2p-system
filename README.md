@@ -121,7 +121,7 @@ It's a good practice to use a virtual environment.
     Test the entire flow of the system:
     ```bash
     python integration_test.py
-    ````
+    ```
 
 ---
 

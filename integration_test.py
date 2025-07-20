@@ -24,7 +24,7 @@ def generate_file():
     response = requests.get(f"{FLASK_API_URL}/generate")
     if response.status_code == 200:
         return response.json()
-    raise RuntimeError("Failed to generate file")
+    raise RuntimeError(f"Failed to generate file. Status: {response.status_code}, Response: {response.text}")
 
 
 def query_file(node, file_name):
@@ -39,9 +39,12 @@ def query_file(node, file_name):
 
 def simulate_node_failure():
     """Simulate node failures."""
-    for node, connection in nodes[:2]:  # Remove first 2 nodes
+    to_remove = []  # Temporary list to store nodes to be removed
+    for node, connection in nodes[:2]:  # Identify first 2 nodes to remove
         connection.unreg_from_bs()
-        nodes.remove((node, connection))
+        to_remove.append((node, connection))
+    for item in to_remove:  # Remove identified nodes after iteration
+        nodes.remove(item)
 
 
 def main():

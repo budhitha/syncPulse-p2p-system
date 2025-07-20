@@ -15,16 +15,21 @@ def generate_file():
     """Generate a random file with size between 2-10 MB and return its details."""
     file_size_mb = random.randint(2, 10)
     file_size_bytes = file_size_mb * 1024 * 1024
-    file_content = os.urandom(file_size_bytes)  # Generate random binary data
     file_name = f"file_{file_size_mb}MB.bin"
     file_path = os.path.join(FILE_DIR, file_name)
 
-    # Write the file
+    # Write the file in chunks and calculate SHA-256 hash incrementally
+    sha256_hash = hashlib.sha256()
+    chunk_size = 1024 * 1024  # 1 MB
+    bytes_written = 0
     with open(file_path, 'wb') as f:
-        f.write(file_content)
+        while bytes_written < file_size_bytes:
+            chunk = os.urandom(min(chunk_size, file_size_bytes - bytes_written))
+            f.write(chunk)
+            sha256_hash.update(chunk)
+            bytes_written += len(chunk)
 
-    # Calculate SHA-256 hash
-    sha256_hash = hashlib.sha256(file_content).hexdigest()
+    sha256_hash = sha256_hash.hexdigest()
 
     return file_name, file_path, file_size_mb, sha256_hash
 

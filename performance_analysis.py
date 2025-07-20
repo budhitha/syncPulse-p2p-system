@@ -15,6 +15,9 @@ metrics = {
 
 def plot_cdf(data, title, xlabel):
     """Plot CDF for the given data."""
+    if not data:
+        print(f"Warning: No data available to plot for {title}.")
+        return
     sorted_data = np.sort(data)
     cdf = np.arange(1, len(sorted_data) + 1) / len(sorted_data)
     plt.plot(sorted_data, cdf, marker='.', linestyle='none')
@@ -37,13 +40,23 @@ def log_query_performance(start_time, hops, messages, routing_table_size):
 def analyze_metrics():
     """Analyze and print performance metrics."""
     print("Performance Analysis:")
-    print(
-        f"Min Hops: {min(metrics['hops'])}, Max Hops: {max(metrics['hops'])}, Avg Hops: {statistics.mean(metrics['hops'])}")
-    print(
-        f"Min Latency: {min(metrics['latency'])}, Max Latency: {max(metrics['latency'])}, Avg Latency: {statistics.mean(metrics['latency'])}")
+    
+    if metrics['hops']:
+        print(
+            f"Min Hops: {min(metrics['hops'])}, Max Hops: {max(metrics['hops'])}, Avg Hops: {statistics.mean(metrics['hops'])}")
+        plot_cdf(metrics['hops'], "CDF of Hops", "Hops")
+    else:
+        print("No data available for Hops.")
+    
+    if metrics['latency']:
+        print(
+            f"Min Latency: {min(metrics['latency'])}, Max Latency: {max(metrics['latency'])}, Avg Latency: {statistics.mean(metrics['latency'])}")
+        plot_cdf(metrics['latency'], "CDF of Latency", "Latency (s)")
+    else:
+        print("No data available for Latency.")
+    
     print(f"Messages per Node: {dict(metrics['messages_per_node'])}")
-    print(f"Routing Table Sizes: {metrics['routing_table_sizes']}")
-
-    # Example usage
-    plot_cdf(metrics['hops'], "CDF of Hops", "Hops")
-    plot_cdf(metrics['latency'], "CDF of Latency", "Latency (s)")
+    if metrics['routing_table_sizes']:
+        print(f"Routing Table Sizes: {metrics['routing_table_sizes']}")
+    else:
+        print("No data available for Routing Table Sizes.")
