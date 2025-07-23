@@ -1,6 +1,7 @@
 import logging
+import time
 
-from config.config import BOOTSTRAP_IP, NODE_DEFAULT_PORT, BOOTSTRAP_PORT
+from config.config import BOOTSTRAP_IP, BOOTSTRAP_PORT
 from node import Node
 
 
@@ -8,16 +9,28 @@ def main():
     # Set up logging configuration at the entry point
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    # Application configuration
-    my_ip = BOOTSTRAP_IP
-    my_port = NODE_DEFAULT_PORT
-    my_name = "peer2"
-    bootstrap_ip = BOOTSTRAP_IP
-    bootstrap_port = BOOTSTRAP_PORT
+    file = "File Names.txt"
+    # Example setup
+    with open(file=file, mode="r") as file:
+        file_content = file.readlines()
+    node1 = Node(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT, name="Node1", file_list=[line.strip() for line in file_content],
+                 peers=[(BOOTSTRAP_IP, BOOTSTRAP_PORT + 1)])
+    node2 = Node(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT + 1, name="Node2", file_list=[],
+                 peers=[(BOOTSTRAP_IP, BOOTSTRAP_PORT)])
 
-    # Create Node and connect to the bootstrap server
-    node_instance = Node(bootstrap_ip, bootstrap_port, my_ip, my_port, my_name)
-    node_instance.register()  # Register with the bootstrap server
+    node1.start()
+    node2.start()
+
+    # Generate a query from Node1
+    test_query_file = "test_queries.txt"  # Use a test-specific filename
+    node1.generate_query(file_name=test_query_file)
+
+    # Allow time for the query to be processed
+    time.sleep(2)
+
+    # Stop nodes after testing
+    node1.stop()
+    node2.stop()
 
 
 if __name__ == "__main__":

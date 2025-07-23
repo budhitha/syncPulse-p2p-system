@@ -2,11 +2,15 @@ import logging
 import socket
 import threading
 
+from config.config import BOOTSTRAP_IP, BOOTSTRAP_PORT
+
+
 class Node:
     def __init__(self, ip, port, name):
         self.ip = ip
         self.port = port
         self.name = name
+
 
 class BootstrapServer:
     def __init__(self, ip='0.0.0.0', port=5000):
@@ -86,5 +90,5 @@ class BootstrapServer:
 
 
 if __name__ == "__main__":
-    server = BootstrapServer(ip="0.0.0.0", port=5000)
+    server = BootstrapServer(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT)
     server.start()
