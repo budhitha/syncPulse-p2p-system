@@ -1,3 +1,4 @@
+import logging
 import socket
 import threading
 
@@ -14,27 +15,56 @@ class BootstrapServer:
         self.nodes = []  # Registered nodes
 
     def handle_client(self, conn, addr):
-        data = conn.recv(1024).decode()
-        print("Received:", data)
-        toks = data.split()
-        if len(toks) < 5 or toks[1] != "REG":
-            response = "0013 REGOK 9999"  # error format
-        else:
-            ip, port, name = toks[2], toks[3], toks[4]
-            # Check if already registered
-            exists = any(n.ip == ip and n.port == int(port) for n in self.nodes)
-            if not exists:
-                self.nodes.append(Node(ip, int(port), name))
-            # Prepare response
-            num_nodes = min(len(self.nodes) - 1, 2)  # Exclude the registering node
-            other_nodes = [n for n in self.nodes if not (n.ip == ip and n.port == int(port))]
-            response = f"REGOK {num_nodes}"
-            for n in other_nodes[:2]:
-                response += f" {n.ip} {n.port} {n.name}"
-            response = f"{len(response)+5:04d} {response}"
+        try:
+            # Receive the data from the client
+            data = conn.recv(1024).decode()
+            logging.info(f"Received: {data}")
 
-        conn.send(response.encode())
-        conn.close()
+            # Tokenize the message
+            toks = data.split()
+            response = ""
+
+            if len(toks) < 2:
+                # Invalid message format
+                response = f"{len('REGOK 9999') + 5:04d} REGOK 9999"  # Default error format
+            elif toks[1] == "REG":
+                # Handle registration
+                ip, port, name = toks[2], toks[3], toks[4]
+                print(f"Registering node: {name}, IP: {ip}, Port: {port}")
+
+                # Check if node is already registered
+                exists = any(n.ip == ip and n.port == int(port) for n in self.nodes)
+                if not exists:
+                    self.nodes.append(Node(ip, int(port), name))
+
+                # Create response with up to 2 neighbors
+                num_nodes = min(len(self.nodes) - 1, 2)  # Exclude the new node itself
+                other_nodes = [n for n in self.nodes if not (n.ip == ip and n.port == int(port))]
+                response = f"REGOK {num_nodes}"
+                for n in other_nodes[:2]:
+                    response += f" {n.ip} {n.port} {n.name}"
+                response = f"{len(response) + 5:04d} {response}"
+            elif toks[1] == "UNREG":
+                # Handle unregistration
+                ip, port, name = toks[2], toks[3], toks[4]
+                print(f"Unregistering node: {name}, IP: {ip}, Port: {port}")
+
+                # Remove the node if it exists
+                self.nodes = [n for n in self.nodes if not (n.ip == ip and n.port == int(port) and n.name == name)]
+
+                # Send success acknowledgment
+                response = f"{len('UNROK 0') + 5:04d} UNROK 0"
+            else:
+                # Invalid command
+                response = f"{len('REGOK 9999') + 5:04d} REGOK 9999"
+
+            # Send the response back to the client
+            print(f"Handled command: {toks[1]}")
+            conn.send(response.encode())
+        except Exception as e:
+            print(f"Error handling client: {e}")
+        finally:
+            conn.close()
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -45,6 +75,15 @@ class BootstrapServer:
             while True:
                 conn, addr = s.accept()
                 threading.Thread(target=self.handle_client, args=(conn, addr)).start()
+
+    def register_node(self, ip, port, name):
+        new_node = {"ip": ip, "port": port, "name": name}
+        self.nodes.append(new_node)
+        return self.nodes[-2:]  # Send last two registered nodes
+
+    def unregister_node(self, name):
+        self.nodes = [node for node in self.nodes if node['name'] != name]
+
 
 if __name__ == "__main__":
     server = BootstrapServer(ip="0.0.0.0", port=5000)
