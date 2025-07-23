@@ -9,10 +9,13 @@ from ttypes import Node as SimpleNode  # Import the simple Node class for the bo
 
 
 class Node:
-    def __init__(self, ip, port, name, file_list, peers):
+    def __init__(self, ip, port, name, file_list, peers, bs_ip, bs_port):
         self.ip = ip
         self.port = port
         self.name = name
+        self.bs_ip = bs_ip
+        self.bs_port = bs_port
+
         # Ensure sampling does not exceed the size of the file_list
         if not file_list:
             self.file_list = set()  # Assign an empty set if file_list is empty
