@@ -19,16 +19,10 @@ class BootstrapServerConnection:
         self.unreg_from_bs()
 
     def message_with_length(self, message):
-        '''
-        Helper function to prepend the length of the message to the message itself
-        Args:
-            message (str): message to prepend the length
-        Returns:
-            str: Prepended message
-        '''
-        # Calculate the correct length without adding an extra space redundantly
-        formatted_message = str((10000 + len(message) + 5))[1:] + " " + message
-        return formatted_message
+        """
+        Helper function to prepend the length of the message to the message itself.
+        """
+        return f"{len(message) + 5:04d} {message}"
 
     def connect_to_bs(self):
         '''
@@ -128,3 +122,28 @@ class BootstrapServerConnection:
 
         if toks[0] != "UNROK":  # Check the first token after removing the length prefix
             raise RuntimeError("Unreg failed")
+
+    def join_network(self, target_ip, target_port):
+        """
+        Sends a JOIN request to another node in the distributed system.
+
+        Args:
+            target_ip (str): IP address of the target node.
+            target_port (int): Port number of the target node.
+
+        Returns:
+            str: Response from the target node.
+        """
+        message = f"JOIN {self.me.ip} {self.me.port}"
+        formatted_message = self.message_with_length(message)
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((target_ip, target_port))
+                s.send(formatted_message.encode())
+
+                # Receive response
+                response = s.recv(1024).decode()
+                return response
+        except Exception as e:
+            return f"Error while sending JOIN request: {e}"
