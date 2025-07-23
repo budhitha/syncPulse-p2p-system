@@ -1,3 +1,5 @@
+import random
+
 import requests
 import time
 
@@ -26,25 +28,35 @@ def generate_file():
         return response.json()
     raise RuntimeError(f"Failed to generate file. Status: {response.status_code}, Response: {response.text}")
 
+def simulate_hops(node):
+    """Simulate the number of hops for a query from the given node."""
+    # For demonstration, return a random number between 1 and 5
+    return random.randint(1, 5)
+
+def simulate_messages(node):
+    """Simulate the number of messages for a query from the given node."""
+    return random.randint(10, 50)
+
+def get_routing_table_size(node):
+    """Return the size of the node's routing table."""
+    return len(node.routing_table)
 
 def query_file(node, file_name):
     """Simulate a file query from a node."""
     start_time = time.time()
     # Simulate query logic here (e.g., send query to neighbors)
-    hops = 3  # Example hop count
-    messages = {'node_id': node.name, 'count': 5}  # Example message count
-    routing_table_size = 4  # Example routing table size
+    hops = simulate_hops(node)  # Calculate the number of hops dynamically
+    messages = simulate_messages(node)  # Simulate the message count dynamically
+    routing_table_size = get_routing_table_size(node)  # Fetch the routing table size dynamically
     log_query_performance(start_time, hops, messages, routing_table_size)
 
 
 def simulate_node_failure():
     """Simulate node failures."""
-    to_remove = []  # Temporary list to store nodes to be removed
-    for node, connection in nodes[:2]:  # Identify first 2 nodes to remove
+    
+    for node, connection in nodes[:2]:  # Identify and remove first 2 nodes
         connection.unreg_from_bs()
-        to_remove.append((node, connection))
-    for item in to_remove:  # Remove identified nodes after iteration
-        nodes.remove(item)
+        nodes.remove((node, connection))
 
 
 def main():
