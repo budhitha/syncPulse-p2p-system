@@ -1,4 +1,5 @@
 import logging
+import shlex
 import socket
 
 from config.config import BOOTSTRAP_IP, BOOTSTRAP_PORT
@@ -31,7 +32,7 @@ def main():
 
         try:
             # Parse the input command
-            parts = user_input.split()
+            parts = shlex.split(user_input)
             if len(parts) == 5 and parts[1] == "REG":
                 ip, port, username = parse_command_parts(parts)
                 my_node = Node(ip=ip, port=port, name=username, file_list=[], peers=[(BOOTSTRAP_IP, BOOTSTRAP_PORT)],
@@ -73,12 +74,14 @@ def main():
                 response = BootstrapServerConnection(bs=bs_node, me=my_node).leave_network()
                 logging.info(response)
                 print('\n')
-            elif len(parts) == 5 and parts[1] == "SER":
-                _, _, ip, port, file_name = parts
+            elif len(parts) == 6 and parts[1] == "SER":
+                _, _, ip, port, file_name, hops = parts
                 port = int(port)
+                hops = int(hops)
 
                 my_node = SimpleNode(ip=ip, port=port, name="MyNode")
-                response = BootstrapServerConnection(bs=bs_node, me=my_node).search_file(file_name=file_name.strip('"'))
+                response = BootstrapServerConnection(bs=bs_node, me=my_node).search_file(file_name=file_name.strip('"'),
+                                                                                         hops=hops)
                 logging.info(response)
                 print('\n')
 

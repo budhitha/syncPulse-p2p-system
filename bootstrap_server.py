@@ -75,15 +75,21 @@ class BootstrapServer:
                 # Send success acknowledgment
                 response = f"{len('LEAVEOK 0') + 5:04d} LEAVEOK 0"
             elif toks[1] == "SER":
-                ip, port, file_name, hops = toks[2], toks[3], toks[4].strip('"'), int(toks[5])
+                ip, port = toks[2], toks[3]
+                hops = int(toks[-1])  # Parse the last token as hops
+                file_name = " ".join(toks[4:-1]).strip('"')  # Join tokens for the file name
                 print(f"Search request: IP: {ip}, Port: {port}, File: {file_name}, Hops: {hops}")
 
-                # Simulate file search (replace with actual logic)
+                # Simulate file search
                 matching_files = [f for f in self.get_files() if file_name.lower() in f.lower()]
                 no_files = len(matching_files)
 
                 if no_files > 0:
                     response = f"SEROK {no_files} {self.ip} {self.port} {hops + 1} " + " ".join(matching_files)
+                else:
+                    response = f"SEROK 0 {self.ip} {self.port} {hops + 1}"
+
+                response = f"{len(response) + 5:04d} {response}"
             else:
                 # Invalid command
                 response = f"{len('REGOK 9999') + 5:04d} REGOK 9999"
