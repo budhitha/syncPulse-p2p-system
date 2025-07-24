@@ -35,7 +35,10 @@ def simulate_hops(node):
 
 def simulate_messages(node):
     """Simulate the number of messages for a query from the given node."""
-    return random.randint(10, 50)
+    return {
+        'node_id': node.name,  # Use the node's name as its ID
+        'count': random.randint(10, 50)  # Simulate the message count dynamically
+    }
 
 def get_routing_table_size(node):
     """Return the size of the node's routing table."""
