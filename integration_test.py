@@ -6,10 +6,11 @@ import statistics
 from config.config import BOOTSTRAP_IP, BOOTSTRAP_PORT, FLASK_API_URL
 from connections.bootstrap_server_connection import BootstrapServerConnection
 from ttypes import Node
-from performance_analysis import log_query_performance
+from performance_analysis import log_query_performance, plot_graphs
 
 # Nodes
 nodes = []
+
 
 # Performance Metrics
 class PerformanceMetrics:
@@ -49,7 +50,9 @@ class PerformanceMetrics:
             "node_degrees": self.calculate_metrics(self.node_degrees)
         }
 
+
 performance_metrics = PerformanceMetrics()
+
 
 def setup_nodes():
     """Start and register nodes with the bootstrap server."""
@@ -59,6 +62,7 @@ def setup_nodes():
         connection.connect_to_bs()
         nodes.append((node, connection))
 
+
 def generate_file():
     """Generate a file using the Flask API."""
     response = requests.get(f"{FLASK_API_URL}/generate")
@@ -66,9 +70,11 @@ def generate_file():
         return response.json()
     raise RuntimeError(f"Failed to generate file. Status: {response.status_code}, Response: {response.text}")
 
+
 def simulate_hops(node):
     """Simulate the number of hops for a query from the given node."""
     return random.randint(1, 5)
+
 
 def simulate_messages(node):
     """Simulate the number of messages for a query from the given node."""
@@ -77,9 +83,11 @@ def simulate_messages(node):
         'count': random.randint(10, 50)  # Simulate the message count dynamically
     }
 
+
 def get_routing_table_size(node):
     """Return the size of the node's routing table."""
     return len(node.routing_table)
+
 
 def query_file(node, file_name):
     """Simulate a file query from a node."""
@@ -97,25 +105,29 @@ def query_file(node, file_name):
 
     log_query_performance(start_time, hops, messages, routing_table_size)
 
+
 def simulate_node_failure():
     """Simulate node failures with graceful departure."""
-    for neighbor in node.routing_table:
-        try:
-            connection.send_leave_message(neighbor)
-            neighbor_connection = BootstrapServerConnection(self.me, neighbor)
-            neighbor_connection.update_routing_table_on_leave(node)
-        except Exception as e:
-            print(f"Failed to update routing table for {neighbor}: {e}")
+    for node, connection in nodes:  # Iterate over the nodes list
+        for neighbor in node.routing_table:
+            try:
+                connection.send_leave_message(neighbor)
+                neighbor_connection = BootstrapServerConnection(node, neighbor)
+                neighbor_connection.update_routing_table_on_leave(node)
+            except Exception as e:
+                print(f"Failed to update routing table for {neighbor}: {e}")
 
         # Unregister the node from the bootstrap server
         connection.unreg_from_bs()
         nodes.remove((node, connection))
+
 
 def analyze_metrics():
     """Analyze and print performance metrics."""
     summary = performance_metrics.get_performance_summary()
     print("Performance Metrics Summary:")
     print(summary)
+
 
 def main():
     """Run the integration test."""
@@ -135,6 +147,8 @@ def main():
         query_file(node, file_details['file_name'])
 
     analyze_metrics()
+    plot_graphs()
+
 
 if __name__ == "__main__":
     main()
