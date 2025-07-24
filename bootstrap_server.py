@@ -58,6 +58,13 @@ class BootstrapServer:
 
                 # Send success acknowledgment
                 response = f"{len('UNROK 0') + 5:04d} UNROK 0"
+            elif toks[1] == "JOIN":
+                # Handle JOIN request
+                source_ip, source_port = toks[2], toks[3]
+                print(f"Node joining network: IP: {source_ip}, Port: {source_port}")
+
+                # Acknowledge the JOIN request
+                response = f"{len('JOINOK 0') + 5:04d} JOINOK 0"
             else:
                 # Invalid command
                 response = f"{len('REGOK 9999') + 5:04d} REGOK 9999"

@@ -1,6 +1,8 @@
 # syncPulse - Decentralized Node Network
 
-A Python-based implementation of a decentralized network using nodes that connect, register, and communicate with each other over a distributed system. The project allows nodes to connect via a bootstrap server, exchange information, and manage a scalable peer-to-peer network.
+A Python-based implementation of a decentralized network using nodes that connect, register, and communicate with each
+other over a distributed system. The project allows nodes to connect via a bootstrap server, exchange information, and
+manage a scalable peer-to-peer network.
 
 ---
 
@@ -29,6 +31,7 @@ A Python-based implementation of a decentralized network using nodes that connec
 ## Project Structure
 
 The project is organized as follows:
+
 - **`app.py`**: Entry point for the Flask API.
 - **`bootstrap_server.py`**: Manages the bootstrap server for node registration.
 - **`integration_test.py`**: Script to test the entire flow of the P2P system.
@@ -60,6 +63,7 @@ The project is organized as follows:
 ## Configuration
 
 The system uses the following default configurations (defined in `config/config.py`):
+
 - **Bootstrap Server IP**: `127.0.0.1`
 - **Bootstrap Server Port**: `5000`
 - **Node Default Port**: `5002`
@@ -100,25 +104,26 @@ It's a good practice to use a virtual environment.
    ```
 
 ---
+
 ## Running the system
 
 1. Start the Bootstrap Server
-    
-    Run the bootstrap server to manage node registrations: 
+
+   Run the bootstrap server to manage node registrations:
     ```bash
     python bootstrap_server.py
     ```
-   
+
 2. Start the Flask API
 
-    Start the Flask API for file generation and queries:
+   Start the Flask API for file generation and queries:
     ```bash
     python app.py
     ```
-   
+
 3. Run the Integration Test
 
-    Test the entire flow of the system:
+   Test the entire flow of the system:
     ```bash
     python integration_test.py
     ```
@@ -154,6 +159,7 @@ You can create and initialize a node by using the `main.py` file. Here is an exa
    ```
 
 A new node will:
+
 - Connect to the bootstrap server.
 - Request other nodes in the network (if available).
 - Register itself and become part of the network.
@@ -163,12 +169,99 @@ A new node will:
 ### Commands Supported by Nodes
 
 #### **Commands**
+
 - `REG`: Register a node with the bootstrap server.
+    - **Format**: REG <IP> <Port> <NodeName>
+    - **Example**
+      `REG 127.0.0.1 5001 Node1`
+    - **Response**:
+        - Success: `REGOK <Number of Neighbors> <Neighbor Details>`
+        - Failure: `REGOK 9999` (if registration fails)
+
 - `UNREG`: Unregister a node.
+    - **Format**: UNREG <IP> <Port> <NodeName>
+    - **Example**
+      `UNREG 127.0.0.1 5001 Node1`
+    - **Response**:
+        - Success: UNROK 0
+        - Failure: UNROK 9999 (if unregistration fails)
 - `JOIN`: Notify neighbors when joining the network.
+    - **Format**: JOIN <IP> <Port>
+    - **Example**
+      `JOIN 127.0.0.1 5002`
+    - **Response**:
+        - Success: JOINOK 0 (if successfully joined)
+        - Failure: JOINOK 9999 (if joining fails)
 - `LEAVE`: Notify neighbors when leaving the network.
+    - **Format**: LEAVE <IP> <Port>
+    - **Example**
+      `LEAVE 127.0.0.1 5002`
+    - **Response**:
+        - Success: LEAVEOK 0
+        - Failure: LEAVEOK 9999 (if leaving fails)
 
 ---
+
+### Exposing the System via Internet
+
+To make the system accessible over the internet, you can use [ngrok](https://ngrok.com/) to expose the local server to a
+public URL.
+
+#### Steps to Set Up ngrok
+
+1. **Install ngrok**:
+
+    - Download and install ngrok from the [official website](https://ngrok.com/download).
+
+2. **Expose the Bootstrap Server via TCP**:
+
+    - Start the bootstrap server:
+   ```bash
+   python bootstrap_server.py
+   ```
+    - Run ngrok to expose the bootstrap server's port (default: 5000) using TCP:
+    ```bash
+   ngrok tcp 5000
+   ```
+    - ngrok will provide a public TCP address (e.g., `tcp://0.tcp.ngrok.io:12345`) that can be shared with other nodes.
+
+3. **Update Node Configuration**:
+    - Replace the `BOOTSTRAP_IP` and `BOOTSTRAP_PORT` in `config/config.py` with the ngrok public TCP address and port.
+
+   Example:
+   ```python
+   BOOTSTRAP_IP = "0.tcp.ngrok.io"
+   BOOTSTRAP_PORT = 12345
+   ```
+   
+4. **Expose the Flask API**:
+
+    - Start the Flask API:
+    ```bash
+   python app.py
+   ```
+    - Run ngrok to expose the Flask API's port (default: 4000):
+   ```bash
+   ngrok http 4000
+   ```
+   -ngrok will provide a public URL for the Flask API.
+
+4. **Update Node Configuration**:
+    - Replace the `BOOTSTRAP_IP` in `config/config.py` with the ngrok public URL (e.g., `https://<random>.ngrok.io`).
+
+**Example**
+
+If ngrok provides the URL `https://abc123.ngrok.io` for the bootstrap server, update the configuration as follows:
+
+```python
+BOOTSTRAP_IP = "0.tcp.ngrok.io"
+BOOTSTRAP_PORT = 12345
+```
+
+Now, nodes can connect to the bootstrap server using the public TCP address.
+For more details on setting up ngrok with TCP, visit the [ngrok setup guide](https://ngrok.com/docs).
+---
+
 ## Troubleshooting
 
 - **Flask API Not Responding**: Ensure the Flask server is running on port 4000.
@@ -225,6 +318,7 @@ pytest tests/
 ```
 
 This will test:
+
 - Node registration/unregistration.
 - Neighbor connections.
 - Message handling (e.g., forming and parsing commands).
@@ -242,7 +336,8 @@ This will test:
 
 ## Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request if you'd like to improve or fix something.
+Contributions are welcome! Feel free to open an issue or submit a pull request if you'd like to improve or fix
+something.
 
 ---
 
