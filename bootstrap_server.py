@@ -1,15 +1,24 @@
 import logging
+import random
 import socket
 import threading
+import time
 
 from config.config import BOOTSTRAP_IP, BOOTSTRAP_PORT
+from connections.bootstrap_server_connection import BootstrapServerConnection
+from ttypes import Node as SimpleNode
 
 
 class Node:
-    def __init__(self, ip, port, name):
+    def __init__(self, ip, port, name, file_list):
         self.ip = ip
         self.port = port
         self.name = name
+        self.files = self.assign_files(file_list)
+
+    def assign_files(self, file_list):
+        """Assign 3-5 random files to the node."""
+        return random.sample(file_list, k=random.randint(3, 5))
 
 
 class BootstrapServer:
@@ -39,7 +48,8 @@ class BootstrapServer:
                 # Check if node is already registered
                 exists = any(n.ip == ip and n.port == int(port) for n in self.nodes)
                 if not exists:
-                    self.nodes.append(Node(ip, int(port), name))
+                    file_list = self.get_files()  # Retrieve the list of files
+                    self.nodes.append(Node(ip, int(port), name, file_list))
 
                 # Create response with up to 2 neighbors
                 num_nodes = min(len(self.nodes) - 1, 2)  # Exclude the new node itself
@@ -58,38 +68,29 @@ class BootstrapServer:
 
                 # Send success acknowledgment
                 response = f"{len('UNROK 0') + 5:04d} UNROK 0"
-            elif toks[1] == "JOIN":
-                # Handle JOIN request
-                source_ip, source_port = toks[2], toks[3]
-                print(f"Node joining network: IP: {source_ip}, Port: {source_port}")
-
-                # Acknowledge the JOIN request
-                response = f"{len('JOINOK 0') + 5:04d} JOINOK 0"
             elif toks[1] == "LEAVE":
+                # Handle LEAVE request
                 ip, port = toks[2], toks[3]
-                print(f"Node leaving network: IP: {ip}, Port: {port}")
-
-                # Remove the node from the list
-                self.nodes = [n for n in self.nodes if not (n.ip == ip and n.port == int(port))]
-
-                # Send success acknowledgment
-                response = f"{len('LEAVEOK 0') + 5:04d} LEAVEOK 0"
+                response = self.handle_leave_request(ip, int(port))
+            elif toks[1] == "JOIN":
+                # Handle JOIN request using BootstrapServerConnection
+                join_message = " ".join(toks)
+                connection = BootstrapServerConnection(
+                    bs=self,
+                    me=SimpleNode(ip=self.ip, port=self.port, name="BootstrapServer")
+                )
+                response = connection.handle_join_request(join_message)
             elif toks[1] == "SER":
                 ip, port = toks[2], toks[3]
                 hops = int(toks[-1])  # Parse the last token as hops
                 file_name = " ".join(toks[4:-1]).strip('"')  # Join tokens for the file name
                 print(f"Search request: IP: {ip}, Port: {port}, File: {file_name}, Hops: {hops}")
 
-                # Simulate file search
-                matching_files = [f for f in self.get_files() if file_name.lower() in f.lower()]
-                no_files = len(matching_files)
-
-                if no_files > 0:
-                    response = f"SEROK {no_files} {self.ip} {self.port} {hops + 1} " + " ".join(matching_files)
-                else:
-                    response = f"SEROK 0 {self.ip} {self.port} {hops + 1}"
-
-                response = f"{len(response) + 5:04d} {response}"
+                # Forward the request to neighbors
+                response = self.forward_request(f"SER {ip} {port} \"{file_name}\" {hops - 1}", hops)
+            elif toks[1] == "ERROR":
+                # Handle ERROR message
+                self.handle_error_message(" ".join(toks[2:]))
             else:
                 # Invalid command
                 response = f"{len('REGOK 9999') + 5:04d} REGOK 9999"
@@ -101,6 +102,41 @@ class BootstrapServer:
             print(f"Error handling client: {e}")
         finally:
             conn.close()
+
+    def forward_request(self, message, hops):
+        """Forward requests to active neighbors."""
+        for neighbor in self.nodes:
+            try:
+                if hops > 0:
+                    with socket.create_connection((neighbor.ip, neighbor.port), timeout=5) as s:
+                        s.sendall(message.encode())
+                        response = s.recv(1024).decode()
+                        if response.startswith("SEROK"):
+                            return response
+            except (socket.timeout, ConnectionRefusedError):
+                print(f"Neighbor {neighbor.name} at {neighbor.ip}:{neighbor.port} is unreachable.")
+        return f"{len('SEROK 0') + 5:04d} SEROK 0"  # Default response if no results
+
+    def start_heartbeat(self, interval=10):
+        """Periodically check the availability of nodes."""
+
+        def heartbeat():
+            while True:
+                for node in self.nodes:
+                    if not self.check_node_availability(node):
+                        print(f"Node {node.name} at {node.ip}:{node.port} is unreachable. Marking as failed.")
+                        self.nodes.remove(node)
+                time.sleep(interval)
+
+        threading.Thread(target=heartbeat, daemon=True).start()
+
+    def check_node_availability(self, node):
+        """Check if a node is reachable."""
+        try:
+            with socket.create_connection((node.ip, node.port), timeout=5):
+                return True
+        except (socket.timeout, ConnectionRefusedError):
+            return False
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -120,6 +156,14 @@ class BootstrapServer:
     def unregister_node(self, name):
         self.nodes = [node for node in self.nodes if node['name'] != name]
 
+    def handle_leave_request(self, ip, port):
+        """Handle LEAVE requests from nodes."""
+        for node in self.nodes:
+            if node.ip == ip and node.port == int(port):
+                self.nodes.remove(node)
+                return f"{len('LEAVEOK 0') + 5:04d} LEAVEOK 0"
+        return f"{len('LEAVEOK 9999') + 5:04d} LEAVEOK 9999"
+
     def get_files(self):
         """
         Reads file names from the 'File Names.txt' file and returns them as a list.
@@ -131,7 +175,21 @@ class BootstrapServer:
             print("Error: 'File Names.txt' not found.")
             return []
 
+    def handle_error_message(self, message):
+        """
+        Handle an incoming ERROR message.
+
+        Args:
+            message (str): The ERROR message received.
+
+        Returns:
+            None
+        """
+        # Log the error message
+        print(f"ERROR received: {message}")
+
 
 if __name__ == "__main__":
     server = BootstrapServer(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT)
+    server.start_heartbeat(interval=10)  # Check every 10 seconds
     server.start()

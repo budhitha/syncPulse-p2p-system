@@ -61,8 +61,9 @@ def main():
                 local_ip = socket.gethostbyname(socket.gethostname())  # Replace with the actual port
 
                 my_node = SimpleNode(ip=local_ip, port=BOOTSTRAP_PORT, name="MyNode")  # Example node details
-                response = BootstrapServerConnection(bs=bs_node, me=my_node).join_network(target_ip=target_ip,
-                                                                                          target_port=target_port)
+                target_node = SimpleNode(ip=target_ip, port=target_port, name="TargetNode")
+
+                response = BootstrapServerConnection(bs=bs_node, me=my_node).send_join_request(target_node=target_node)
                 result = handle_join_response(response)
                 logging.info(result)
                 print('\n')
@@ -71,7 +72,9 @@ def main():
                 port = int(port)
 
                 my_node = SimpleNode(ip=ip, port=port, name="MyNode")
-                response = BootstrapServerConnection(bs=bs_node, me=my_node).leave_network()
+                target_node = SimpleNode(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT, name="BootstrapServer")
+
+                response = BootstrapServerConnection(bs=bs_node, me=my_node).send_leave_request(target_node=target_node)
                 logging.info(response)
                 print('\n')
             elif len(parts) == 6 and parts[1] == "SER":
