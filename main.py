@@ -65,6 +65,22 @@ def main():
                 result = handle_join_response(response)
                 logging.info(result)
                 print('\n')
+            elif len(parts) == 4 and parts[1] == "LEAVE":
+                _, _, ip, port = parts
+                port = int(port)
+
+                my_node = SimpleNode(ip=ip, port=port, name="MyNode")
+                response = BootstrapServerConnection(bs=bs_node, me=my_node).leave_network()
+                logging.info(response)
+                print('\n')
+            elif len(parts) == 5 and parts[1] == "SER":
+                _, _, ip, port, file_name = parts
+                port = int(port)
+
+                my_node = SimpleNode(ip=ip, port=port, name="MyNode")
+                response = BootstrapServerConnection(bs=bs_node, me=my_node).search_file(file_name=file_name.strip('"'))
+                logging.info(response)
+                print('\n')
 
             else:
                 logging.warning("Invalid command format. Use: <length> REG/UNREG <IP_address> <port_no> <username>\n")

@@ -147,3 +147,49 @@ class BootstrapServerConnection:
                 return response
         except Exception as e:
             return f"Error while sending JOIN request: {e}"
+
+    def leave_network(self):
+        """
+        Sends a LEAVE request to the bootstrap server.
+
+        Returns:
+            str: Response from the bootstrap server.
+        """
+        message = f"LEAVE {self.me.ip} {self.me.port}"
+        formatted_message = self.message_with_length(message)
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.bs.ip, self.bs.port))
+                s.send(formatted_message.encode())
+
+                # Receive response
+                response = s.recv(1024).decode()
+                return response
+        except Exception as e:
+            return f"Error while sending LEAVE request: {e}"
+
+    def search_file(self, file_name, hops=0):
+        """
+        Sends a SER request to search for a file in the network.
+
+        Args:
+            file_name (str): The name of the file to search for.
+            hops (int): The hop count for the search.
+
+        Returns:
+            str: Response from the network.
+        """
+        message = f"SER {self.me.ip} {self.me.port} \"{file_name}\" {hops}"
+        formatted_message = self.message_with_length(message)
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((self.bs.ip, self.bs.port))
+                s.send(formatted_message.encode())
+
+                # Receive response
+                response = s.recv(1024).decode()
+                return response
+        except Exception as e:
+            return f"Error while sending SER request: {e}"

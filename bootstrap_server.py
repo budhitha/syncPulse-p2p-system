@@ -65,6 +65,25 @@ class BootstrapServer:
 
                 # Acknowledge the JOIN request
                 response = f"{len('JOINOK 0') + 5:04d} JOINOK 0"
+            elif toks[1] == "LEAVE":
+                ip, port = toks[2], toks[3]
+                print(f"Node leaving network: IP: {ip}, Port: {port}")
+
+                # Remove the node from the list
+                self.nodes = [n for n in self.nodes if not (n.ip == ip and n.port == int(port))]
+
+                # Send success acknowledgment
+                response = f"{len('LEAVEOK 0') + 5:04d} LEAVEOK 0"
+            elif toks[1] == "SER":
+                ip, port, file_name, hops = toks[2], toks[3], toks[4].strip('"'), int(toks[5])
+                print(f"Search request: IP: {ip}, Port: {port}, File: {file_name}, Hops: {hops}")
+
+                # Simulate file search (replace with actual logic)
+                matching_files = [f for f in self.get_files() if file_name.lower() in f.lower()]
+                no_files = len(matching_files)
+
+                if no_files > 0:
+                    response = f"SEROK {no_files} {self.ip} {self.port} {hops + 1} " + " ".join(matching_files)
             else:
                 # Invalid command
                 response = f"{len('REGOK 9999') + 5:04d} REGOK 9999"
@@ -94,6 +113,17 @@ class BootstrapServer:
 
     def unregister_node(self, name):
         self.nodes = [node for node in self.nodes if node['name'] != name]
+
+    def get_files(self):
+        """
+        Reads file names from the 'File Names.txt' file and returns them as a list.
+        """
+        try:
+            with open('File Names.txt', 'r') as file:
+                return [line.strip() for line in file if line.strip()]
+        except FileNotFoundError:
+            print("Error: 'File Names.txt' not found.")
+            return []
 
 
 if __name__ == "__main__":
