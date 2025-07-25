@@ -193,7 +193,7 @@ class BootstrapServerConnection:
     def handle_join_request(self, message):
         """Handle an incoming JOIN request."""
         # Parse the JOIN message
-        _, ip, port = message.split()
+        _, _, ip, port = message.split()
         # Add the new node to the routing table
         self.me.routing_table.append((ip, int(port)))
         # Send JOINOK response

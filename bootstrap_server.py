@@ -191,5 +191,5 @@ class BootstrapServer:
 
 if __name__ == "__main__":
     server = BootstrapServer(ip=BOOTSTRAP_IP, port=BOOTSTRAP_PORT)
-    server.start_heartbeat(interval=10)  # Check every 10 seconds
+    # server.start_heartbeat(interval=10)  # Check every 10 seconds
     server.start()
