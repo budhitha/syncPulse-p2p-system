@@ -37,7 +37,7 @@ def log_query_performance(start_time, hops, messages, routing_table_size):
     metrics['routing_table_sizes'].append(routing_table_size)
 
 
-def analyze_metrics():
+def plot_graphs():
     """Analyze and print performance metrics."""
     print("Performance Analysis:")
     

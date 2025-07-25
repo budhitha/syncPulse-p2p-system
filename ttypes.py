@@ -3,4 +3,6 @@ class Node:
         self.ip = ip
         self.port = port
         self.name = name
+        self.max_hops = 3
+        self.file_list = []
         self.routing_table = []  # Initialize the routing table as an empty list

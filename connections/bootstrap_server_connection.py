@@ -1,8 +1,9 @@
 import socket
+import threading
+import time
 
 from config.config import BUFFER_SIZE
 from ttypes import Node
-from random import shuffle
 
 
 class BootstrapServerConnection:
@@ -10,6 +11,8 @@ class BootstrapServerConnection:
         self.bs = bs
         self.me = me
         self.users = []
+        self.maintenance_interval = 30  # Run every 30 seconds
+        self.start_routing_table_maintenance()
 
     def __enter__(self):
         self.users = self.connect_to_bs()
@@ -23,6 +26,51 @@ class BootstrapServerConnection:
         Helper function to prepend the length of the message to the message itself.
         """
         return f"{len(message) + 5:04d} {message}"
+
+    def send_message(self, target_ip, target_port, message):
+        """
+        Sends a message to a target node.
+
+        Args:
+            target_ip (str): IP address of the target node.
+            target_port (int): Port number of the target node.
+            message (str): The message to send.
+
+        Returns:
+            str: Response from the target node, if any.
+        """
+        formatted_message = self.message_with_length(message)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((target_ip, target_port))
+                s.send(formatted_message.encode())
+
+                # Receive response
+                response = s.recv(BUFFER_SIZE).decode()
+                return response
+        except Exception as e:
+            return f"Error while sending message: {e}"
+
+    def maintain_routing_table(self):
+        """Remove stale nodes from the routing table."""
+        while True:
+            time.sleep(self.maintenance_interval)
+            self.me.routing_table = [
+                node for node in self.me.routing_table if self.ping_node(node)
+            ]
+
+    def ping_node(self, node):
+        """Check if a node is reachable."""
+        try:
+            response = self.send_message(node.ip, node.port, "PING")
+            return response == "PONG"
+        except:
+            return False
+
+    def start_routing_table_maintenance(self):
+        """Start the routing table maintenance thread."""
+        maintenance_thread = threading.Thread(target=self.maintain_routing_table, daemon=True)
+        maintenance_thread.start()
 
     def connect_to_bs(self):
         '''
@@ -135,18 +183,22 @@ class BootstrapServerConnection:
             str: Response from the target node.
         """
         message = f"JOIN {self.me.ip} {self.me.port}"
-        formatted_message = self.message_with_length(message)
+        return self.send_message(target_ip, target_port, message)
 
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((target_ip, target_port))
-                s.send(formatted_message.encode())
+    def send_join_request(self, target_node):
+        """Send a JOIN request to a target node."""
+        message = f"JOIN {self.me.ip} {self.me.port}"
+        return self.send_message(target_node.ip, target_node.port, message)
 
-                # Receive response
-                response = s.recv(1024).decode()
-                return response
-        except Exception as e:
-            return f"Error while sending JOIN request: {e}"
+    def handle_join_request(self, message):
+        """Handle an incoming JOIN request."""
+        # Parse the JOIN message
+        _, _, ip, port = message.split()
+        # Add the new node to the routing table
+        self.me.routing_table.append((ip, int(port)))
+        # Send JOINOK response
+        response = "JOINOK 0"
+        return self.send_message(ip, int(port), response)
 
     def leave_network(self):
         """
@@ -156,40 +208,74 @@ class BootstrapServerConnection:
             str: Response from the bootstrap server.
         """
         message = f"LEAVE {self.me.ip} {self.me.port}"
-        formatted_message = self.message_with_length(message)
+        return self.send_message(self.bs.ip, self.bs.port, message)
 
+    def send_leave_request(self, target_node):
+        """Send a LEAVE request to a target node."""
+        message = f"LEAVE {self.me.ip} {self.me.port}"
+        return self.send_message(target_node.ip, target_node.port, message)
+
+    def send_leave_message(self, target_node):
+        """Send a LEAVE message to a target node."""
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.bs.ip, self.bs.port))
-                s.send(formatted_message.encode())
-
-                # Receive response
-                response = s.recv(1024).decode()
-                return response
+            message = f"LEAVE {self.me.ip} {self.me.port}"
+            response = self.send_message(target_node.ip, target_node.port, message)
+            return response
         except Exception as e:
-            return f"Error while sending LEAVE request: {e}"
+            raise RuntimeError(f"Failed to send LEAVE message to {target_node.name}: {e}")
+
+    def handle_leave_request(self, message):
+        """Handle an incoming LEAVE request."""
+        # Parse the LEAVE message
+        _, ip, port = message.split()
+        departing_node = (ip, int(port))
+
+        # Update the routing table
+        self.update_routing_table_on_leave(departing_node)
+
+        # Send LEAVEOK response
+        response = "LEAVEOK 0"
+        return self.send_message(ip, int(port), response)
+
+    def update_routing_table_on_leave(self, departing_node):
+        """
+        Update the routing table when a node leaves.
+
+        Args:
+            departing_node (tuple): A tuple (ip, port) representing the departing node.
+        """
+        self.me.routing_table = [
+            node for node in self.me.routing_table if node != departing_node
+        ]
 
     def search_file(self, file_name, hops=0):
         """
-        Sends a SER request to search for a file in the network.
+        Handles the SER (file search) request and performs the actual file search logic.
 
         Args:
             file_name (str): The name of the file to search for.
-            hops (int): The hop count for the search.
+            hops (int): The current hop count for the search.
 
         Returns:
-            str: Response from the network.
+            str: SEROK message if the file is found, or forwards the request to neighbors.
         """
-        message = f"SER {self.me.ip} {self.me.port} \"{file_name}\" {hops}"
-        formatted_message = self.message_with_length(message)
+        # Check if the file exists in the local file list (partial match)
+        matching_files = [f for f in self.me.file_list if file_name.lower() in f.lower()]
+        if matching_files:
+            # File found locally, respond with SEROK
+            response = f"SEROK {len(matching_files)} {self.me.ip} {self.me.port} {hops + 1} " + " ".join(matching_files)
+            return self.message_with_length(response)
 
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.bs.ip, self.bs.port))
-                s.send(formatted_message.encode())
+        # If file not found locally, forward the SER request to neighbors
+        if hops < self.me.max_hops:
+            for neighbor in self.me.routing_table:
+                neighbor_ip, neighbor_port = neighbor
+                message = f"SER {self.me.ip} {self.me.port} \"{file_name}\" {hops + 1}"
+                response = self.send_message(neighbor_ip, neighbor_port, message)
+                if response and response.startswith("SEROK"):
+                    # If a neighbor finds the file, return the response
+                    return response
 
-                # Receive response
-                response = s.recv(1024).decode()
-                return response
-        except Exception as e:
-            return f"Error while sending SER request: {e}"
+        # If no file is found and max hops are reached, return SEROK with 0 results
+        response = f"SEROK 0 {self.me.ip} {self.me.port} {hops + 1}"
+        return self.message_with_length(response)

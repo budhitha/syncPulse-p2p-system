@@ -15,6 +15,7 @@ class Node:
         self.name = name
         self.bs_ip = bs_ip
         self.bs_port = bs_port
+        self.routing_table = []  # Initialize the routing table as an empty list
 
         # Ensure sampling does not exceed the size of the file_list
         if not file_list:
